@@ -111,7 +111,7 @@ func ParseArguments() (*Config, error) {
 	if dsn != "" {
 		driver = getDriverFromDSN(dsn)
 	} else {
-		if dbDriver == "" || user == "" || password == "" || host == "" || port != 0 || db == "" {
+		if dbDriver == "" || user == "" || password == "" || host == "" || port == 0 || db == "" {
 			return nil, errors.New("either dsn or all of the connection options are required")
 		}
 
