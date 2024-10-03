@@ -8,6 +8,9 @@ Select users from an sqlite database and write the result as a csv
 sqlxp -q 'SELECT * FROM users' -o users.csv example.db
 ```
 
+> [!TIP]
+> For larger exports, it's recommended to use CSV or JSON arrays as they write directly to the file, minimizing memory usage.
+
 For more usage information run `sqlxp --help`.
 
 ## Features
