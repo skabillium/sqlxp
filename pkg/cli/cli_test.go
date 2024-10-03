@@ -21,7 +21,7 @@ func Test_getFileExtension(t *testing.T) {
 	}
 }
 
-func Test_getDriverFromDSN(t *testing.T) {
+func Test_getDriverFromConnectionString(t *testing.T) {
 	tests := [][2]string{
 		{"postgres://user:password@localhost/dbname?sslmode=disable", DriverPostgres},
 		{"user:password@tcp(127.0.0.1:3306)/dbname", DriverMysql},
@@ -32,7 +32,7 @@ func Test_getDriverFromDSN(t *testing.T) {
 		file := test[0]
 		expected := test[1]
 
-		result := getDriverFromDSN(file)
+		result := getDriverFromConnectionString(file)
 		if result != expected {
 			t.Errorf("error testing '%s': expected '%s', got '%s'", file, expected, result)
 		}

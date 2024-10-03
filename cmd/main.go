@@ -20,7 +20,7 @@ func main() {
 		cli.Fatal(err)
 	}
 
-	db, err := sql.Open(args.Database.Driver, args.Database.DSN())
+	db, err := sql.Open(args.Database.Driver, args.Database.ConnectionString())
 	if err != nil {
 		cli.Fatal("could not connect to database", err)
 	}

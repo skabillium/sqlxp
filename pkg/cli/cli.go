@@ -37,17 +37,19 @@ type Database struct {
 	Host     string
 	Port     string
 	Name     string
-	dsn      string
+	conn     string
 }
 
-func (d *Database) DSN() string {
-	if d.dsn != "" {
-		return d.dsn
+func (d *Database) ConnectionString() string {
+	if d.conn != "" {
+		return d.conn
 	}
 
 	switch d.Driver {
 	case DriverMysql:
 		return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", d.User, d.Password, d.Host, d.Port, d.Name)
+	case DriverPostgres:
+		return fmt.Sprintf("%s://%s:%s@%s:%s/%s", DriverPostgres, d.User, d.Password, d.Host, d.Port, d.Name)
 	default:
 		log.Fatalf("database driver '%s' not supported", d.Driver)
 	}
@@ -67,9 +69,9 @@ type Config struct {
 
 func ParseArguments() (*Config, error) {
 	var (
-		dbDriver, user, password, host, db, output, query, file, dsn, orientationStr, format string
-		ping, print, help, version                                                           bool
-		port                                                                                 int
+		dbDriver, user, password, host, db, output, query, file, conn, orientationStr, format string
+		ping, print, help, version                                                            bool
+		port                                                                                  int
 	)
 
 	flag.StringVarP(&dbDriver, "driver", "D", "", "Database driver")
@@ -78,6 +80,7 @@ func ParseArguments() (*Config, error) {
 	flag.StringVarP(&host, "host", "h", "localhost", "Database host")
 	flag.IntVarP(&port, "port", "P", 0, "Database port")
 	flag.StringVarP(&db, "database", "d", "", "Database name")
+	flag.StringVarP(&conn, "connection", "c", "", "Database connection string")
 	flag.StringVarP(&output, "out", "o", "", "Output file")
 	flag.StringVarP(&query, "query", "q", "", "Query to execute")
 	flag.StringVarP(&file, "file", "f", "", "File to read query from")
@@ -99,8 +102,8 @@ func ParseArguments() (*Config, error) {
 		ExitWithMessage("sqlxp version", CurrentVersion)
 	}
 
-	if flag.NArg() == 1 && dsn == "" {
-		dsn = flag.Args()[0]
+	if flag.NArg() == 1 && conn == "" {
+		conn = flag.Args()[0]
 	}
 
 	if port < 0 {
@@ -108,8 +111,8 @@ func ParseArguments() (*Config, error) {
 	}
 
 	var driver string
-	if dsn != "" {
-		driver = getDriverFromDSN(dsn)
+	if conn != "" {
+		driver = getDriverFromConnectionString(conn)
 	} else {
 		if dbDriver == "" || user == "" || password == "" || host == "" || port == 0 || db == "" {
 			return nil, errors.New("either dsn or all of the connection options are required")
@@ -177,7 +180,7 @@ func ParseArguments() (*Config, error) {
 		}
 	}
 
-	if !print && output == "" {
+	if !print && !ping && output == "" {
 		return nil, errors.New("no output file specified")
 	}
 
@@ -189,7 +192,7 @@ func ParseArguments() (*Config, error) {
 			Host:     host,
 			Port:     strconv.Itoa(port),
 			Name:     db,
-			dsn:      dsn,
+			conn:     conn,
 		},
 		OutputFile:   output,
 		OutputFormat: outputFormat,
@@ -241,10 +244,10 @@ func getDriver(driver string) (string, bool) {
 	}
 }
 
-func getDriverFromDSN(dsn string) string {
-	if strings.HasPrefix(dsn, "postgres://") {
+func getDriverFromConnectionString(conn string) string {
+	if strings.HasPrefix(conn, "postgres://") {
 		return DriverPostgres
-	} else if strings.Contains(dsn, "@tcp(") {
+	} else if strings.Contains(conn, "@tcp(") {
 		return DriverMysql
 	} else {
 		return DriverSqlite
