@@ -38,7 +38,7 @@ func main() {
 
 	rows, err := db.Query(args.Query)
 	if err != nil {
-		panic(err)
+		cli.Fatal(err)
 	}
 
 	var writer io.Writer = os.Stdout
