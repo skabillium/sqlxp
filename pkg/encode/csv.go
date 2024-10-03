@@ -15,7 +15,14 @@ func ToCSV(w io.Writer, rows *sql.Rows) error {
 		return err
 	}
 
-	data := [][]string{columns}
+	writer := csv.NewWriter(w)
+	defer writer.Flush()
+
+	// Write the CSV headers (column names)
+	if err := writer.Write(columns); err != nil {
+		return err
+	}
+
 	for rows.Next() {
 		// Prepare a slice to hold the raw data for each column
 		values := make([]any, len(columns))
@@ -45,17 +52,12 @@ func ToCSV(w io.Writer, rows *sql.Rows) error {
 			}
 		}
 
-		data = append(data, rowData)
+		if err := writer.Write(rowData); err != nil {
+			return err
+		}
 	}
 
 	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	writer := csv.NewWriter(w)
-	defer writer.Flush()
-
-	if err := writer.WriteAll(data); err != nil {
 		return err
 	}
 

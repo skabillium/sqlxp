@@ -13,8 +13,10 @@ func ToJsonArray(w io.Writer, rows *sql.Rows) error {
 		return err
 	}
 
-	var results [][]any
+	// Write the opening bracket of the JSON array
+	w.Write([]byte("["))
 
+	isFirst := true
 	values := make([]any, len(columns))
 	valuePtrs := make([]any, len(columns))
 
@@ -39,14 +41,27 @@ func ToJsonArray(w io.Writer, rows *sql.Rows) error {
 			}
 		}
 
-		results = append(results, row)
+		// Marshal row data
+		b, err := json.Marshal(row)
+		if err != nil {
+			return err
+		}
+
+		// Write a comma before the next row if it's not the first row
+		if !isFirst {
+			w.Write([]byte(","))
+		}
+		isFirst = false
+
+		w.Write(b)
 	}
 
-	b, err := json.Marshal(results)
-	if err != nil {
+	// Write the closing bracket of the JSON array
+	w.Write([]byte("]"))
+
+	if err := rows.Err(); err != nil {
 		return err
 	}
 
-	w.Write(b)
 	return nil
 }

@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
-	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -41,26 +41,35 @@ func main() {
 		panic(err)
 	}
 
-	var builder strings.Builder
+	var writer io.Writer = os.Stdout
+	if args.OutputFile != "" {
+		file, err := os.Create(args.OutputFile)
+		if err != nil {
+			cli.Fatal("could not create file", err)
+		}
+		defer file.Close()
+		writer = file
+	}
+
 	switch args.OutputFormat {
 	case cli.FormatCSV:
-		err = encode.ToCSV(&builder, rows)
+		err = encode.ToCSV(writer, rows)
 		if err != nil {
 			cli.Fatal(err)
 		}
 	case cli.FormatJSON:
 		if args.Orientation == cli.OrientationRow {
-			err := encode.ToJsonRows(&builder, rows)
+			err := encode.ToJsonRows(writer, rows)
 			if err != nil {
 				cli.Fatal(err)
 			}
 		} else if args.Orientation == cli.OrientationColumn {
-			err := encode.ToJsonColumns(&builder, rows)
+			err := encode.ToJsonColumns(writer, rows)
 			if err != nil {
 				cli.Fatal(err)
 			}
 		} else {
-			err := encode.ToJsonArray(&builder, rows)
+			err := encode.ToJsonArray(writer, rows)
 			if err != nil {
 				cli.Fatal(err)
 			}
@@ -68,25 +77,5 @@ func main() {
 
 	default:
 		cli.Fatal("unreachable")
-	}
-
-	content := builder.String()
-
-	if args.Print {
-		fmt.Print(content)
-		return
-	}
-
-	file, err := os.Create(args.OutputFile)
-	if err != nil {
-		cli.Fatal("could not create file", err)
-	}
-	// Ensure the file is closed after writing
-	defer file.Close()
-
-	// Write the string to the file
-	_, err = file.WriteString(content)
-	if err != nil {
-		cli.Fatal(err)
 	}
 }
